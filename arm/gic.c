@@ -135,28 +135,30 @@ static void check_ipi_sender(u32 irqstat)
 	}
 }
 
-static void check_irqnr(u32 irqnr)
+static void check_irqnr(u32 irqnr, int expected)
 {
-	if (irqnr != IPI_IRQ)
+	if (irqnr != expected)
 		bad_irq[smp_processor_id()] = irqnr;
 }
 
-static void ipi_handler(struct pt_regs *regs __unused)
+static void irq_handler(struct pt_regs *regs __unused)
 {
 	u32 irqstat = gic_read_iar();
 	u32 irqnr = gic_iar_irqnr(irqstat);
 
-	if (irqnr != GICC_INT_SPURIOUS) {
-		gic_write_eoir(irqstat);
-		smp_rmb(); /* pairs with wmb in stats_reset */
-		++acked[smp_processor_id()];
-		check_ipi_sender(irqstat);
-		check_irqnr(irqnr);
-		smp_wmb(); /* pairs with rmb in check_acked */
-	} else {
+	if (irqnr == GICC_INT_SPURIOUS) {
 		++spurious[smp_processor_id()];
 		smp_wmb();
+		return;
 	}
+
+	gic_write_eoir(irqstat);
+
+	smp_rmb(); /* pairs with wmb in stats_reset */
+	++acked[smp_processor_id()];
+	check_ipi_sender(irqstat);
+	check_irqnr(irqnr, IPI_IRQ);
+	smp_wmb(); /* pairs with rmb in check_acked */
 }
 
 static void gicv2_ipi_send_self(void)
@@ -216,20 +218,20 @@ static void ipi_test_smp(void)
 	report_prefix_pop();
 }
 
-static void ipi_enable(void)
+static void irqs_enable(void)
 {
 	gic_enable_defaults();
 #ifdef __arm__
-	install_exception_handler(EXCPTN_IRQ, ipi_handler);
+	install_exception_handler(EXCPTN_IRQ, irq_handler);
 #else
-	install_irq_handler(EL1H_IRQ, ipi_handler);
+	install_irq_handler(EL1H_IRQ, irq_handler);
 #endif
 	local_irq_enable();
 }
 
 static void ipi_send(void)
 {
-	ipi_enable();
+	irqs_enable();
 	wait_on_ready();
 	ipi_test_self();
 	ipi_test_smp();
@@ -237,9 +239,9 @@ static void ipi_send(void)
 	exit(report_summary());
 }
 
-static void ipi_recv(void)
+static void irq_recv(void)
 {
-	ipi_enable();
+	irqs_enable();
 	cpumask_set_cpu(smp_processor_id(), &ready);
 	while (1)
 		wfi();
@@ -250,7 +252,7 @@ static void ipi_test(void *data __unused)
 	if (smp_processor_id() == IPI_SENDER)
 		ipi_send();
 	else
-		ipi_recv();
+		irq_recv();
 }
 
 static struct gic gicv2 = {
@@ -285,7 +287,7 @@ static void ipi_clear_active_handler(struct pt_regs *regs __unused)
 
 		smp_rmb(); /* pairs with wmb in stats_reset */
 		++acked[smp_processor_id()];
-		check_irqnr(irqnr);
+		check_irqnr(irqnr, IPI_IRQ);
 		smp_wmb(); /* pairs with rmb in check_acked */
 	} else {
 		++spurious[smp_processor_id()];
