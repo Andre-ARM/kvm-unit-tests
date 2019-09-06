@@ -546,6 +546,81 @@ static void gic_test_mmio(void)
 		test_targets(nr_irqs);
 }
 
+static void gic_spi_trigger(int irq)
+{
+	gic_set_irq_bit(irq, GICD_ISPENDR);
+}
+
+static void spi_configure_irq(int irq, int cpu)
+{
+	gic_set_irq_target(irq, cpu);
+	gic_set_irq_priority(irq, 0xa0);
+	gic_enable_irq(irq);
+}
+
+#define IRQ_STAT_NONE		0
+#define IRQ_STAT_IRQ		1
+#define IRQ_STAT_TYPE_MASK	0x3
+#define IRQ_STAT_NO_CLEAR	4
+
+/*
+ * Wait for an SPI to fire (or not) on a certain CPU.
+ * Clears the pending bit if requested afterwards.
+ */
+static void trigger_and_check_spi(const char *test_name,
+				  unsigned int irq_stat,
+				  int cpu)
+{
+	cpumask_t cpumask;
+
+	stats_reset();
+	gic_spi_trigger(SPI_IRQ);
+	cpumask_clear(&cpumask);
+	switch (irq_stat & IRQ_STAT_TYPE_MASK) {
+	case IRQ_STAT_NONE:
+		break;
+	case IRQ_STAT_IRQ:
+		cpumask_set_cpu(cpu, &cpumask);
+		break;
+	}
+
+	check_acked(test_name, &cpumask);
+
+	/* Clean up pending bit in case this IRQ wasn't taken. */
+	if (!(irq_stat & IRQ_STAT_NO_CLEAR))
+		gic_set_irq_bit(SPI_IRQ, GICD_ICPENDR);
+}
+
+static void spi_test_single(void)
+{
+	cpumask_t cpumask;
+	int cpu = smp_processor_id();
+
+	spi_configure_irq(SPI_IRQ, cpu);
+
+	trigger_and_check_spi("SPI triggered by CPU write", IRQ_STAT_IRQ, cpu);
+
+	gic_disable_irq(SPI_IRQ);
+	trigger_and_check_spi("disabled SPI does not fire",
+			      IRQ_STAT_NONE | IRQ_STAT_NO_CLEAR, cpu);
+
+	stats_reset();
+	cpumask_clear(&cpumask);
+	cpumask_set_cpu(cpu, &cpumask);
+	gic_enable_irq(SPI_IRQ);
+	check_acked("now enabled SPI fires", &cpumask);
+}
+
+static void spi_send(void)
+{
+	irqs_enable();
+
+	spi_test_single();
+
+	check_spurious();
+	exit(report_summary());
+}
+
 int main(int argc, char **argv)
 {
 	if (!gic_init()) {
@@ -576,6 +651,10 @@ int main(int argc, char **argv)
 	} else if (strcmp(argv[1], "mmio") == 0) {
 		report_prefix_push(argv[1]);
 		gic_test_mmio();
+		report_prefix_pop();
+	} else if (strcmp(argv[1], "irq") == 0) {
+		report_prefix_push(argv[1]);
+		spi_send();
 		report_prefix_pop();
 	} else {
 		report_abort("Unknown subtest '%s'", argv[1]);
