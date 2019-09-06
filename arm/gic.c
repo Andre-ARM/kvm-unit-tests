@@ -620,14 +620,43 @@ static void spi_test_single(void)
 	check_acked("now enabled SPI fires", &cpumask);
 }
 
+static void spi_test_smp(void)
+{
+	int cpu;
+	int cores = 1;
+
+	wait_on_ready();
+	for_each_present_cpu(cpu) {
+		if (cpu == smp_processor_id())
+			continue;
+		spi_configure_irq(SPI_IRQ, cpu);
+		if (trigger_and_check_spi(NULL, IRQ_STAT_IRQ, cpu))
+			cores++;
+		else
+			report_info("SPI delivery failed on core %d", cpu);
+	}
+	report("SPI delievered on all cores", cores == nr_cpus);
+}
+
 static void spi_send(void)
 {
 	irqs_enable();
 
 	spi_test_single();
 
+	if (nr_cpus > 1)
+		spi_test_smp();
+
 	check_spurious();
 	exit(report_summary());
+}
+
+static void spi_test(void *data __unused)
+{
+	if (smp_processor_id() == 0)
+		spi_send();
+	else
+		irq_recv();
 }
 
 int main(int argc, char **argv)
@@ -663,7 +692,7 @@ int main(int argc, char **argv)
 		report_prefix_pop();
 	} else if (strcmp(argv[1], "irq") == 0) {
 		report_prefix_push(argv[1]);
-		spi_send();
+		on_cpus(spi_test, NULL);
 		report_prefix_pop();
 	} else {
 		report_abort("Unknown subtest '%s'", argv[1]);
