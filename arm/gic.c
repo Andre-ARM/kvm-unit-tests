@@ -23,6 +23,7 @@
 
 #define IPI_SENDER	1
 #define IPI_IRQ		1
+#define SPI_IRQ		(GIC_FIRST_SPI + 30)
 
 struct gic {
 	struct {
@@ -162,8 +163,12 @@ static void irq_handler(struct pt_regs *regs __unused)
 
 	smp_rmb(); /* pairs with wmb in stats_reset */
 	++acked[smp_processor_id()];
-	check_ipi_sender(irqstat);
-	check_irqnr(irqnr, IPI_IRQ);
+	if (irqnr < GIC_NR_PRIVATE_IRQS) {
+		check_ipi_sender(irqstat);
+		check_irqnr(irqnr, IPI_IRQ);
+	} else {
+		check_irqnr(irqnr, SPI_IRQ);
+	}
 	smp_wmb(); /* pairs with rmb in check_acked */
 }
 
