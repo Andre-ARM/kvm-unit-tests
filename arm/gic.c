@@ -66,9 +66,10 @@ static void check_acked(const char *testname, cpumask_t *mask)
 	int missing = 0, extra = 0, unexpected = 0;
 	int nr_pass, cpu, i;
 	bool bad = false;
+	bool noirqs = cpumask_empty(mask);
 
 	/* Wait up to 5s for all interrupts to be delivered */
-	for (i = 0; i < 50; ++i) {
+	for (i = 0; i < (noirqs ? 15 : 50); ++i) {
 		mdelay(100);
 		nr_pass = 0;
 		for_each_present_cpu(cpu) {
@@ -88,12 +89,17 @@ static void check_acked(const char *testname, cpumask_t *mask)
 				bad = true;
 			}
 		}
-		if (nr_pass == nr_cpus) {
+		if (!noirqs && nr_pass == nr_cpus) {
 			report("%s", !bad, testname);
 			if (i)
 				report_info("took more than %d ms", i * 100);
 			return;
 		}
+	}
+
+	if (noirqs && nr_pass == nr_cpus) {
+		report("%s", !bad, testname);
+		return;
 	}
 
 	for_each_present_cpu(cpu) {
