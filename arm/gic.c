@@ -531,6 +531,8 @@ static void gic_test_mmio(void)
 	reg = readl(gic_dist_base + GICD_TYPER);
 	nr_irqs = GICD_TYPER_IRQS(reg);
 	report_info("number of implemented SPIs: %d", nr_irqs - GIC_FIRST_SPI);
+	report_info("GIC %s security extension",
+		reg & (1U << 10) ? "has" : "does not have");
 
 	if (gic_version() == 0x2)
 		test_typer_v2(reg);
@@ -638,6 +640,60 @@ static void spi_test_smp(void)
 	report("SPI delievered on all cores", cores == nr_cpus);
 }
 
+/*
+ * Check the security state configuration of the GIC.
+ * Test whether we can switch to a single security state, to test both
+ * group 0 and group 1 interrupts.
+ * Architecturally a GIC can be configured in different ways, so we don't
+ * insist on the current way KVM emulates the GIC.
+ */
+static bool gicv3_check_security(void *gicd_base)
+{
+	u32 ctlr = readl(gicd_base + GICD_CTLR);
+
+	if (ctlr & GICD_CTLR_DS) {
+		writel(ctlr & ~GICD_CTLR_DS, gicd_base + GICD_CTLR);
+		ctlr = readl(gicd_base + GICD_CTLR);
+		if (!(ctlr & GICD_CTLR_DS))
+			report_info("GIC allowing two security states");
+		else
+			report_info("GIC is one security state only");
+	} else {
+		report_info("GIC resets to two security states");
+	}
+
+	writel(ctlr | GICD_CTLR_DS, gicd_base + GICD_CTLR);
+	ctlr = readl(gicd_base + GICD_CTLR);
+	report("switching to single security state", ctlr & GICD_CTLR_DS);
+
+	/* Group0 delivery only works in single security state. */
+	return ctlr & GICD_CTLR_DS;
+}
+
+/*
+ * The GIC architecture describes two interrupt groups, group 0 and group 1.
+ * On bare-metal systems, running in non-secure world on a GIC with the
+ * security extensions, there is only one group available: group 1.
+ * However in the kernel KVM emulates a GIC with only one security state,
+ * so both groups are available to guests.
+ * Check whether this works as expected (as Linux will not use this feature).
+ * We can only verify this state on a GICv3, so we check it there and silently
+ * assume it's valid for GICv2.
+ */
+static void test_irq_group(void *gicd_base)
+{
+	bool is_gicv3 = (gic_version() == 3);
+
+	report_prefix_push("GROUP");
+	gic_enable_defaults();
+
+	if (is_gicv3) {
+		/* GICv3 features a bit to read and set the security state. */
+		if (!gicv3_check_security(gicd_base))
+			return;
+	}
+}
+
 static void spi_send(void)
 {
 	irqs_enable();
@@ -646,6 +702,12 @@ static void spi_send(void)
 
 	if (nr_cpus > 1)
 		spi_test_smp();
+
+	if (gic_version() == 3)
+		test_irq_group(gicv3_dist_base());
+
+	if (gic_version() == 2)
+		test_irq_group(gicv2_dist_base());
 
 	check_spurious();
 	exit(report_summary());
