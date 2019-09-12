@@ -68,6 +68,16 @@ static inline unsigned long current_level(void)
 	return el & 0xc;
 }
 
+static inline void local_fiq_enable(void)
+{
+	asm volatile("msr daifclr, #1" : : : "memory");
+}
+
+static inline void local_fiq_disable(void)
+{
+	asm volatile("msr daifset, #1" : : : "memory");
+}
+
 static inline void local_irq_enable(void)
 {
 	asm volatile("msr daifclr, #2" : : : "memory");

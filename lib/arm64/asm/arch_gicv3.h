@@ -14,8 +14,11 @@
 #define ICC_IAR0_EL1			sys_reg(3, 0, 12, 8, 0)
 #define ICC_EOIR0_EL1			sys_reg(3, 0, 12, 8, 1)
 #define ICC_SGI1R_EL1			sys_reg(3, 0, 12, 11, 5)
+#define ICC_IAR0_EL1			sys_reg(3, 0, 12, 8, 0)
 #define ICC_IAR1_EL1			sys_reg(3, 0, 12, 12, 0)
+#define ICC_EOIR0_EL1			sys_reg(3, 0, 12, 8, 1)
 #define ICC_EOIR1_EL1			sys_reg(3, 0, 12, 12, 1)
+#define ICC_GRPEN0_EL1			sys_reg(3, 0, 12, 12, 6)
 #define ICC_GRPEN1_EL1			sys_reg(3, 0, 12, 12, 7)
 
 #ifndef __ASSEMBLY__
@@ -61,6 +64,12 @@ static inline void gicv3_write_eoir(u32 irq, int group)
 	else
 		asm volatile("msr_s " xstr(ICC_EOIR1_EL1) ", %0"
 			     : : "r" ((u64)irq));
+	isb();
+}
+
+static inline void gicv3_write_grpen0(u32 val)
+{
+	asm volatile("msr_s " xstr(ICC_GRPEN0_EL1) ", %0" : : "r" ((u64)val));
 	isb();
 }
 

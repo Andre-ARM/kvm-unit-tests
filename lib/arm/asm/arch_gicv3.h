@@ -20,6 +20,7 @@
 #define ICC_EOIR0			__ACCESS_CP15(c12, 0,  c8, 1)
 #define ICC_IAR1			__ACCESS_CP15(c12, 0, c12, 0)
 #define ICC_EOIR1			__ACCESS_CP15(c12, 0, c12, 1)
+#define ICC_IGRPEN0			__ACCESS_CP15(c12, 0, c12, 6)
 #define ICC_IGRPEN1			__ACCESS_CP15(c12, 0, c12, 7)
 
 static inline void gicv3_write_pmr(u32 val)
@@ -51,6 +52,12 @@ static inline void gicv3_write_eoir(u32 irq, int group)
 		write_sysreg(irq, ICC_EOIR0);
 	else
 		write_sysreg(irq, ICC_EOIR1);
+	isb();
+}
+
+static inline void gicv3_write_grpen0(u32 val)
+{
+	write_sysreg(val, ICC_IGRPEN0);
 	isb();
 }
 

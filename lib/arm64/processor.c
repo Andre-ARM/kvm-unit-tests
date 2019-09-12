@@ -190,8 +190,10 @@ void vector_handlers_default_init(vector_fn *handlers)
 {
 	handlers[EL1H_SYNC]	= default_vector_sync_handler;
 	handlers[EL1H_IRQ]	= default_vector_irq_handler;
+	handlers[EL1H_FIQ]	= default_vector_irq_handler;
 	handlers[EL0_SYNC_64]	= default_vector_sync_handler;
 	handlers[EL0_IRQ_64]	= default_vector_irq_handler;
+	handlers[EL0_FIQ_64]	= default_vector_irq_handler;
 }
 
 /* Needed to compile with -Wmissing-prototypes */

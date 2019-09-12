@@ -23,7 +23,39 @@ void gicv2_enable_defaults(void)
 	writel(GICD_ENABLE, dist + GICD_CTLR);
 
 	writel(GICC_INT_PRI_THRESHOLD, cpu_base + GICC_PMR);
-	writel(GICC_ENABLE, cpu_base + GICC_CTLR);
+	writel(GICC_GRP0_ENABLE, cpu_base + GICC_CTLR);
+}
+
+void gicv2_enable_fiq(bool enable)
+{
+	void *cpu_base = gicv2_cpu_base();
+	u32 reg = readl(cpu_base + GICC_CTLR);
+
+	if (enable) {
+		reg |= GICC_GRP0_ENABLE;
+		reg |= GICC_FIQEN;
+	} else {
+		reg &= ~GICC_GRP0_ENABLE;
+		reg &= ~GICC_FIQEN;
+	}
+
+	writel(reg, cpu_base + GICC_CTLR);
+}
+
+void gicv2_enable_group1(bool enable)
+{
+	void *cpu_base = gicv2_cpu_base();
+	u32 reg = readl(cpu_base + GICC_CTLR);
+
+	if (enable) {
+		reg |= GICC_GRP1_ENABLE;
+		reg |= GICC_ACKCTL;
+	} else {
+		reg &= ~GICC_GRP1_ENABLE;
+		reg &= ~GICC_ACKCTL;
+	}
+
+	writel(reg, cpu_base + GICC_CTLR);
 }
 
 u32 gicv2_read_iar(int group)

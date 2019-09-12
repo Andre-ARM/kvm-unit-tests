@@ -35,6 +35,16 @@ static inline unsigned long current_cpsr(void)
 
 #define current_mode() (current_cpsr() & MODE_MASK)
 
+static inline void local_fiq_enable(void)
+{
+	asm volatile("cpsie f" : : : "memory", "cc");
+}
+
+static inline void local_fiq_disable(void)
+{
+	asm volatile("cpsid f" : : : "memory", "cc");
+}
+
 static inline void local_irq_enable(void)
 {
 	asm volatile("cpsie i" : : : "memory", "cc");

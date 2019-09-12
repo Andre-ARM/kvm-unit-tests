@@ -14,7 +14,10 @@
 
 #define GICD_ENABLE			0x1
 
-#define GICC_ENABLE			0x1
+#define GICC_GRP0_ENABLE		0x1
+#define GICC_GRP1_ENABLE		0x2
+#define GICC_ACKCTL			0x4
+#define GICC_FIQEN			0x8
 #define GICC_IAR_INT_ID_MASK		0x3ff
 
 #ifndef __ASSEMBLY__
@@ -32,6 +35,8 @@ extern struct gicv2_data gicv2_data;
 
 extern int gicv2_init(void);
 extern void gicv2_enable_defaults(void);
+extern void gicv2_enable_group1(bool enable);
+extern void gicv2_enable_fiq(bool enable);
 extern u32 gicv2_read_iar(int group);
 extern u32 gicv2_iar_irqnr(u32 iar);
 extern void gicv2_write_eoir(u32 irqstat, int group);
