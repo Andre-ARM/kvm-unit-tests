@@ -178,6 +178,30 @@ static void irq_handler(struct pt_regs *regs __unused)
 	smp_wmb(); /* pairs with rmb in check_acked */
 }
 
+static inline void fiq_handler(struct pt_regs *regs __unused)
+{
+	u32 irqstat = gic_read_iar(0);
+	u32 irqnr = gic_iar_irqnr(irqstat);
+
+	if (irqnr == GICC_INT_SPURIOUS) {
+		++spurious[smp_processor_id()];
+		smp_wmb();
+		return;
+	}
+
+	gic_write_eoir(irqstat, 0);
+
+	smp_rmb(); /* pairs with wmb in stats_reset */
+	++acked[smp_processor_id()];
+	if (irqnr < GIC_NR_PRIVATE_IRQS) {
+		check_ipi_sender(irqstat);
+		check_irqnr(irqnr, IPI_IRQ);
+	} else {
+		check_irqnr(irqnr, SPI_IRQ);
+	}
+	smp_wmb(); /* pairs with rmb in check_acked */
+}
+
 static void gicv2_ipi_send_self(void)
 {
 	writel(2 << 24 | IPI_IRQ, gicv2_dist_base() + GICD_SGIR);
