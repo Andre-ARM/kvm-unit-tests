@@ -683,6 +683,7 @@ static bool gicv3_check_security(void *gicd_base)
 static void test_irq_group(void *gicd_base)
 {
 	bool is_gicv3 = (gic_version() == 3);
+	u32 reg;
 
 	report_prefix_push("GROUP");
 	gic_enable_defaults();
@@ -692,6 +693,16 @@ static void test_irq_group(void *gicd_base)
 		if (!gicv3_check_security(gicd_base))
 			return;
 	}
+
+	/*
+	 * On a security aware GIC in non-secure world the IGROUPR registers
+	 * are RAZ/WI. KVM emulates a single-security-state GIC, so both
+	 * groups are available and the IGROUPR registers are writable.
+	 */
+	reg = gic_get_irq_group(SPI_IRQ);
+	gic_set_irq_group(SPI_IRQ, !reg);
+	report("IGROUPR is writable", gic_get_irq_group(SPI_IRQ) != reg);
+	gic_set_irq_group(SPI_IRQ, reg);
 }
 
 static void spi_send(void)
