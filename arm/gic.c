@@ -156,7 +156,7 @@ static void check_irqnr(u32 irqnr, int expected)
 
 static void irq_handler(struct pt_regs *regs __unused)
 {
-	u32 irqstat = gic_read_iar();
+	u32 irqstat = gic_read_iar(1);
 	u32 irqnr = gic_iar_irqnr(irqstat);
 
 	if (irqnr == GICC_INT_SPURIOUS) {
@@ -288,7 +288,7 @@ static struct gic gicv3 = {
 
 static void ipi_clear_active_handler(struct pt_regs *regs __unused)
 {
-	u32 irqstat = gic_read_iar();
+	u32 irqstat = gic_read_iar(1);
 	u32 irqnr = gic_iar_irqnr(irqstat);
 
 	if (irqnr != GICC_INT_SPURIOUS) {

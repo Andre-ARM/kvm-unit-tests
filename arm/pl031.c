@@ -134,7 +134,7 @@ static void gic_irq_unmask(void)
 
 static void irq_handler(struct pt_regs *regs)
 {
-	u32 irqstat = gic_read_iar();
+	u32 irqstat = gic_read_iar(1);
 	u32 irqnr = gic_iar_irqnr(irqstat);
 
 	gic_write_eoir(irqstat);

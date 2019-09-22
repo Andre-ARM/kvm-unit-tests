@@ -12,7 +12,7 @@ struct gicv3_data gicv3_data;
 
 struct gic_common_ops {
 	void (*enable_defaults)(void);
-	u32 (*read_iar)(void);
+	u32 (*read_iar)(int group);
 	u32 (*iar_irqnr)(u32 iar);
 	void (*write_eoir)(u32 irqstat);
 	void (*ipi_send_single)(int irq, int cpu);
@@ -117,10 +117,10 @@ void gic_enable_defaults(void)
 	gic_common_ops->enable_defaults();
 }
 
-u32 gic_read_iar(void)
+u32 gic_read_iar(int group)
 {
 	assert(gic_common_ops && gic_common_ops->read_iar);
-	return gic_common_ops->read_iar();
+	return gic_common_ops->read_iar(group);
 }
 
 u32 gic_iar_irqnr(u32 iar)

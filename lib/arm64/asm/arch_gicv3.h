@@ -11,6 +11,7 @@
 #include <asm/sysreg.h>
 
 #define ICC_PMR_EL1			sys_reg(3, 0, 4, 6, 0)
+#define ICC_IAR0_EL1			sys_reg(3, 0, 12, 8, 0)
 #define ICC_SGI1R_EL1			sys_reg(3, 0, 12, 11, 5)
 #define ICC_IAR1_EL1			sys_reg(3, 0, 12, 12, 0)
 #define ICC_EOIR1_EL1			sys_reg(3, 0, 12, 12, 1)
@@ -38,10 +39,15 @@ static inline void gicv3_write_sgi1r(u64 val)
 	asm volatile("msr_s " xstr(ICC_SGI1R_EL1) ", %0" : : "r" (val));
 }
 
-static inline u32 gicv3_read_iar(void)
+static inline u32 gicv3_read_iar(int group)
 {
 	u64 irqstat;
-	asm volatile("mrs_s %0, " xstr(ICC_IAR1_EL1) : "=r" (irqstat));
+
+	if (group == 0)
+		asm volatile("mrs_s %0, " xstr(ICC_IAR0_EL1) : "=r" (irqstat));
+	else
+		asm volatile("mrs_s %0, " xstr(ICC_IAR1_EL1) : "=r" (irqstat));
+
 	dsb(sy);
 	return (u64)irqstat;
 }

@@ -150,7 +150,7 @@ static void set_timer_irq_enabled(struct timer_info *info, bool enabled)
 static void irq_handler(struct pt_regs *regs)
 {
 	struct timer_info *info;
-	u32 irqstat = gic_read_iar();
+	u32 irqstat = gic_read_iar(1);
 	u32 irqnr = gic_iar_irqnr(irqstat);
 
 	if (irqnr != GICC_INT_SPURIOUS)

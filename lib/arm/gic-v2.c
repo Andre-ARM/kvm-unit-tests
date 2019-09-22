@@ -26,8 +26,9 @@ void gicv2_enable_defaults(void)
 	writel(GICC_ENABLE, cpu_base + GICC_CTLR);
 }
 
-u32 gicv2_read_iar(void)
+u32 gicv2_read_iar(int group)
 {
+	/* GICv2 acks both group0 and group1 IRQs with the same register. */
 	return readl(gicv2_cpu_base() + GICC_IAR);
 }
 

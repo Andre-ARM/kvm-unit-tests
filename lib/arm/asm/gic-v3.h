@@ -69,7 +69,7 @@ extern struct gicv3_data gicv3_data;
 
 extern int gicv3_init(void);
 extern void gicv3_enable_defaults(void);
-extern u32 gicv3_read_iar(void);
+extern u32 gicv3_read_iar(int group);
 extern u32 gicv3_iar_irqnr(u32 iar);
 extern void gicv3_write_eoir(u32 irqstat);
 extern void gicv3_ipi_send_single(int irq, int cpu);

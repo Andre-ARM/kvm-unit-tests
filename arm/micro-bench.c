@@ -33,7 +33,7 @@ static void ipi_irq_handler(struct pt_regs *regs)
 {
 	ipi_ready = false;
 	ipi_received = true;
-	gic_write_eoir(gic_read_iar());
+	gic_write_eoir(gic_read_iar(1));
 	ipi_ready = true;
 }
 

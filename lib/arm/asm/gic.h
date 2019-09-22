@@ -68,7 +68,7 @@ extern void gic_enable_defaults(void);
  * below will work with any supported gic version.
  */
 extern int gic_version(void);
-extern u32 gic_read_iar(void);
+extern u32 gic_read_iar(int group);
 extern u32 gic_iar_irqnr(u32 iar);
 extern void gic_write_eoir(u32 irqstat);
 extern void gic_ipi_send_single(int irq, int cpu);
