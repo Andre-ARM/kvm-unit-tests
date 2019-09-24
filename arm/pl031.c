@@ -137,7 +137,7 @@ static void irq_handler(struct pt_regs *regs)
 	u32 irqstat = gic_read_iar(1);
 	u32 irqnr = gic_iar_irqnr(irqstat);
 
-	gic_write_eoir(irqstat);
+	gic_write_eoir(irqstat, 1);
 
 	if (irqnr == pl031_irq) {
 		report("  RTC RIS == 1", readl(&pl031->ris) == 1);

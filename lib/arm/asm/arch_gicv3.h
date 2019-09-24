@@ -17,6 +17,7 @@
 #define ICC_PMR				__ACCESS_CP15(c4, 0, c6, 0)
 #define ICC_SGI1R			__ACCESS_CP15_64(0, c12)
 #define ICC_IAR0			__ACCESS_CP15(c12, 0,  c8, 0)
+#define ICC_EOIR0			__ACCESS_CP15(c12, 0,  c8, 1)
 #define ICC_IAR1			__ACCESS_CP15(c12, 0, c12, 0)
 #define ICC_EOIR1			__ACCESS_CP15(c12, 0, c12, 1)
 #define ICC_IGRPEN1			__ACCESS_CP15(c12, 0, c12, 7)
@@ -44,9 +45,12 @@ static inline u32 gicv3_read_iar(int group)
 	return irqstat;
 }
 
-static inline void gicv3_write_eoir(u32 irq)
+static inline void gicv3_write_eoir(u32 irq, int group)
 {
-	write_sysreg(irq, ICC_EOIR1);
+	if (group == 0)
+		write_sysreg(irq, ICC_EOIR0);
+	else
+		write_sysreg(irq, ICC_EOIR1);
 	isb();
 }
 

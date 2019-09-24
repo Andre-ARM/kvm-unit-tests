@@ -70,7 +70,7 @@ extern void gic_enable_defaults(void);
 extern int gic_version(void);
 extern u32 gic_read_iar(int group);
 extern u32 gic_iar_irqnr(u32 iar);
-extern void gic_write_eoir(u32 irqstat);
+extern void gic_write_eoir(u32 irqstat, int group);
 extern void gic_ipi_send_single(int irq, int cpu);
 extern void gic_ipi_send_mask(int irq, const cpumask_t *dest);
 

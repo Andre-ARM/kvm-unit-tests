@@ -27,13 +27,13 @@ static u32 cntfrq;
 
 static volatile bool ipi_ready, ipi_received;
 static void *vgic_dist_base;
-static void (*write_eoir)(u32 irqstat);
+static void (*write_eoir)(u32 irqstat, int group);
 
 static void ipi_irq_handler(struct pt_regs *regs)
 {
 	ipi_ready = false;
 	ipi_received = true;
-	gic_write_eoir(gic_read_iar(1));
+	gic_write_eoir(gic_read_iar(1), 1);
 	ipi_ready = true;
 }
 
@@ -135,7 +135,7 @@ static void eoi_exec(void)
 	int spurious_id = 1023; /* writes to EOI are ignored */
 
 	/* Avoid measuring assert(..) in gic_write_eoir */
-	write_eoir(spurious_id);
+	write_eoir(spurious_id, 1);
 }
 
 struct exit_test {

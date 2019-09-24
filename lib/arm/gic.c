@@ -14,7 +14,7 @@ struct gic_common_ops {
 	void (*enable_defaults)(void);
 	u32 (*read_iar)(int group);
 	u32 (*iar_irqnr)(u32 iar);
-	void (*write_eoir)(u32 irqstat);
+	void (*write_eoir)(u32 irqstat, int group);
 	void (*ipi_send_single)(int irq, int cpu);
 	void (*ipi_send_mask)(int irq, const cpumask_t *dest);
 };
@@ -129,10 +129,10 @@ u32 gic_iar_irqnr(u32 iar)
 	return gic_common_ops->iar_irqnr(iar);
 }
 
-void gic_write_eoir(u32 irqstat)
+void gic_write_eoir(u32 irqstat, int group)
 {
 	assert(gic_common_ops && gic_common_ops->write_eoir);
-	gic_common_ops->write_eoir(irqstat);
+	gic_common_ops->write_eoir(irqstat, group);
 }
 
 void gic_ipi_send_single(int irq, int cpu)

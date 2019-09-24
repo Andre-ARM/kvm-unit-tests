@@ -165,7 +165,7 @@ static void irq_handler(struct pt_regs *regs __unused)
 		return;
 	}
 
-	gic_write_eoir(irqstat);
+	gic_write_eoir(irqstat, 1);
 
 	smp_rmb(); /* pairs with wmb in stats_reset */
 	++acked[smp_processor_id()];

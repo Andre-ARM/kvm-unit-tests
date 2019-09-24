@@ -37,7 +37,7 @@ u32 gicv2_iar_irqnr(u32 iar)
 	return iar & GICC_IAR_INT_ID_MASK;
 }
 
-void gicv2_write_eoir(u32 irqstat)
+void gicv2_write_eoir(u32 irqstat, int group)
 {
 	writel(irqstat, gicv2_cpu_base() + GICC_EOIR);
 }

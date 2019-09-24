@@ -154,7 +154,7 @@ static void irq_handler(struct pt_regs *regs)
 	u32 irqnr = gic_iar_irqnr(irqstat);
 
 	if (irqnr != GICC_INT_SPURIOUS)
-		gic_write_eoir(irqstat);
+		gic_write_eoir(irqstat, 1);
 
 	if (irqnr == PPI(vtimer_info.irq)) {
 		info = &vtimer_info;
