@@ -62,7 +62,7 @@ static void stats_reset(void)
 	smp_wmb();
 }
 
-static void check_acked(const char *testname, cpumask_t *mask)
+static int check_acked(const char *testname, cpumask_t *mask)
 {
 	int missing = 0, extra = 0, unexpected = 0;
 	int nr_pass, cpu, i;
@@ -91,16 +91,20 @@ static void check_acked(const char *testname, cpumask_t *mask)
 			}
 		}
 		if (!noirqs && nr_pass == nr_cpus) {
-			report("%s", !bad, testname);
-			if (i)
-				report_info("took more than %d ms", i * 100);
-			return;
+			if (testname) {
+				report("%s", !bad, testname);
+				if (i)
+					report_info("took more than %d ms",
+						    i * 100);
+			}
+			return i * 100;
 		}
 	}
 
 	if (noirqs && nr_pass == nr_cpus) {
-		report("%s", !bad, testname);
-		return;
+		if (testname)
+			report("%s", !bad, testname);
+		return i * 100;
 	}
 
 	for_each_present_cpu(cpu) {
@@ -115,9 +119,11 @@ static void check_acked(const char *testname, cpumask_t *mask)
 		}
 	}
 
-	report("%s", false, testname);
+	if (testname)
+		report("%s", false, testname);
 	report_info("Timed-out (5s). ACKS: missing=%d extra=%d unexpected=%d",
 		    missing, extra, unexpected);
+	return -1;
 }
 
 static void check_spurious(void)
@@ -567,11 +573,12 @@ static void spi_configure_irq(int irq, int cpu)
  * Wait for an SPI to fire (or not) on a certain CPU.
  * Clears the pending bit if requested afterwards.
  */
-static void trigger_and_check_spi(const char *test_name,
+static bool trigger_and_check_spi(const char *test_name,
 				  unsigned int irq_stat,
 				  int cpu)
 {
 	cpumask_t cpumask;
+	bool ret = true;
 
 	stats_reset();
 	gic_spi_trigger(SPI_IRQ);
@@ -584,11 +591,13 @@ static void trigger_and_check_spi(const char *test_name,
 		break;
 	}
 
-	check_acked(test_name, &cpumask);
+	ret = (check_acked(test_name, &cpumask) >= 0);
 
 	/* Clean up pending bit in case this IRQ wasn't taken. */
 	if (!(irq_stat & IRQ_STAT_NO_CLEAR))
 		gic_set_irq_bit(SPI_IRQ, GICD_ICPENDR);
+
+	return ret;
 }
 
 static void spi_test_single(void)
