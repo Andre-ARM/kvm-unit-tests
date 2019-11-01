@@ -42,7 +42,7 @@ void gicv3_enable_defaults(void)
 	writel(0, dist + GICD_CTLR);
 	gicv3_dist_wait_for_rwp();
 
-	writel(GICD_CTLR_ARE_NS | GICD_CTLR_ENABLE_G1A | GICD_CTLR_ENABLE_G1,
+	writel(GICD_CTLR_ARE_NS | GICD_CTLR_ENABLE_G0 | GICD_CTLR_ENABLE_G1,
 	       dist + GICD_CTLR);
 	gicv3_dist_wait_for_rwp();
 

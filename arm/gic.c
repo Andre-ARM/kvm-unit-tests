@@ -640,6 +640,8 @@ static void spi_test_smp(void)
 	report("SPI delievered on all cores", cores == nr_cpus);
 }
 
+#define GICD_CTLR_ENABLE_BOTH (GICD_CTLR_ENABLE_G0 | GICD_CTLR_ENABLE_G1)
+
 /*
  * Check the security state configuration of the GIC.
  * Test whether we can switch to a single security state, to test both
@@ -693,6 +695,25 @@ static void test_irq_group(void *gicd_base)
 		if (!gicv3_check_security(gicd_base))
 			return;
 	}
+
+	/* Check whether the group enable bits stick. */
+	reg = readl(gicd_base + GICD_CTLR);
+	writel(reg & ~GICD_CTLR_ENABLE_BOTH, gicd_base + GICD_CTLR);
+	reg = readl(gicd_base + GICD_CTLR);
+	report("both groups disabled sticks",
+	       (reg & GICD_CTLR_ENABLE_BOTH) == 0);
+
+	reg &= ~GICD_CTLR_ENABLE_BOTH;
+	writel(reg | GICD_CTLR_ENABLE_G1, gicd_base + GICD_CTLR);
+	reg = readl(gicd_base + GICD_CTLR);
+	report("group 1 enabled sticks",
+	       (reg & GICD_CTLR_ENABLE_BOTH) == GICD_CTLR_ENABLE_G1);
+
+	reg &= ~GICD_CTLR_ENABLE_BOTH;
+	writel(reg | GICD_CTLR_ENABLE_G0, gicd_base + GICD_CTLR);
+	reg = readl(gicd_base + GICD_CTLR);
+	report("group 0 enabled sticks",
+	       (reg & GICD_CTLR_ENABLE_BOTH) == GICD_CTLR_ENABLE_G0);
 
 	/*
 	 * On a security aware GIC in non-secure world the IGROUPR registers
